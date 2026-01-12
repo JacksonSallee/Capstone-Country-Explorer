@@ -747,8 +747,8 @@ let data = [
       "region": "Americas",
       "population": 1380004385,
       "flags": {
-          "svg": "./assets/colombia.svg",
-          "png": "./assets/colombia.png"
+          "svg": "./assets/Colombia.svg",
+          "png": "./assets/Colombia.png"
       },
       "currencies": [
           {
