@@ -35,9 +35,9 @@ Font-size:
   Error messages font size - 12px
 
 # Wireframes
-Home:
-<img width="791" height="802" alt="image" src="https://github.com/user-attachments/assets/07629e89-08d2-4c65-8f1a-7cbcb6d4afb5" />
-Country Details:
+Home:<br />
+<img width="791" height="802" alt="image" src="https://github.com/user-attachments/assets/07629e89-08d2-4c65-8f1a-7cbcb6d4afb5" /><br />
+Country Details:<br />
 <img width="1265" height="773" alt="image" src="https://github.com/user-attachments/assets/5a58d833-270c-42c5-89cd-6d2766a6b1a3" />
 
 
