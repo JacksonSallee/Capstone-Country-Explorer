@@ -150,5 +150,5 @@ function countryCardHandler(country) {
 
     encodeURIComponent(getFormattedNames(country.languages));
 
-    window.location.href = "/details.html" + queryString;
+    window.location.href = "/Capstone-Country-Explorer/details.html" + queryString;
 }
