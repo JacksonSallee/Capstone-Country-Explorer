@@ -3,7 +3,7 @@ let displayCount = 12;
 
 // REST Countries /all requires the `fields` query param (limit: 10 fields).
 const API_URL =
-  'https://restcountries.com/v3.1/all?fields=name,capital,subregion,region,population,flags,currencies,languages';
+  'https://capstone-country-explorer-backend.onrender.com/countries';
 
 let allCountries = [];
 let countries = [];
@@ -257,5 +257,5 @@ function countryCardHandler(country) {
     '&languages=' +
     encodeURIComponent(getFormattedNames(country.languages));
 
-  window.location.href = '/Capstone-Country-Explorer/details.html' + queryString;
+  window.location.href = './details.html' + queryString;
 }

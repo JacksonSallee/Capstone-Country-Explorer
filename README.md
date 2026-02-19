@@ -1,6 +1,10 @@
 # Capstone-Country-Explorer
 This is my version of the capstone project from IBM SkillsBuild for the certificate "Front End Developer"
 
+# Extensions
+
+This project has been updated to call from the https://restcountries.com/ endpoint through my own backend demostrating the Model-View-Controller architecture of a full stack web application (my backend is hosted at https://capstone-country-explorer-backend.onrender.com/countries). The backend code is in this repository along with a repository strictly for the backend: https://github.com/JacksonSallee/Capstone-Country-Explorer-Backend
+
 # Requirements
 
 The application is intended for users to be able to explore facts about countries, such as their population, capital, region, and more. You need to quickly mockup a user interface (UI) and demonstrate the following functionality:
