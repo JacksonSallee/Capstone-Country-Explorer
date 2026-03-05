@@ -1,37 +1,75 @@
 let countryCardsContainer = document.getElementById('country-cards-container');
 let displayCount = 12;
 
-// REST Countries /all requires the `fields` query param (limit: 10 fields).
-const API_URL =
-  'https://capstone-country-explorer-backend.onrender.com/countries';
-
 let allCountries = [];
 let countries = [];
 let isLoading = true;
 
-document.addEventListener('DOMContentLoaded', init);
-
-async function init() {
-  try {
-    countries = [];
-    allCountries = [];
-    isLoading = true;
-    populateCountryCards();
-
-    allCountries = await fetchCountries();
-    countries = allCountries;
-  } catch (err) {
-    console.error('Failed to load countries:', err);
-    countries = [];
-    allCountries = [];
-    countryCardsContainer.innerHTML =
-      '<p>Unable to load country data. Please try again later.</p>';
-  } finally {
-    isLoading = false;
-    displayCount = 12;
-    populateCountryCards();
-  }
+// fetchData() returns a promise that resolves with the JSON payload from
+// the server's /countries endpoint.
+function fetchData() {
+  return fetch('/countries')
+    .then(function (response) {
+      if (!response.ok) {
+        throw new Error('HTTP error! Status: ' + response.status);
+      }
+      return response.json();
+    })
+    .catch(function (error) {
+      console.error('Error fetching countries data', error);
+      throw error; // propagate so caller can handle
+    });
 }
+
+// Helpers that build comma-separated lists from the API shapes
+function getFormattedCurrencies(currencies) {
+  if (!currencies) return '';
+  if (Array.isArray(currencies)) {
+    return currencies.map((c) => c.name || '').join(', ');
+  }
+  if (typeof currencies === 'object') {
+    return Object.keys(currencies)
+      .map((code) => currencies[code]?.name || '')
+      .join(', ');
+  }
+  return '';
+}
+
+function getFormattedLanguages(languages) {
+  if (!languages) return '';
+  if (Array.isArray(languages)) {
+    return languages.map((l) => l.name || '').join(', ');
+  }
+  if (typeof languages === 'object') {
+    return Object.keys(languages)
+      .map((code) => languages[code] || '')
+      .join(', ');
+  }
+  return '';
+}
+
+// load the data after DOMContentLoaded, then render
+document.addEventListener('DOMContentLoaded', () => {
+  isLoading = true;
+  populateCountryCards();
+
+  fetchData()
+    .then((data) => {
+      allCountries = Array.isArray(data) ? data : [];
+      countries = allCountries;
+    })
+    .catch((err) => {
+      countries = [];
+      allCountries = [];
+      countryCardsContainer.innerHTML =
+        '<p>Unable to load country data. Please try again later.</p>';
+    })
+    .finally(() => {
+      isLoading = false;
+      displayCount = 12;
+      populateCountryCards();
+    });
+});
 
 function mapCountry(country) {
   const name = {
@@ -49,24 +87,42 @@ function mapCountry(country) {
     png: country?.flags?.png ?? '',
   };
 
-  // v3.1 currencies is an object keyed by currency code
-  const currencies = country?.currencies
-    ? Object.entries(country.currencies).map(([code, info]) => ({
+  // currencies may come from the API as an object keyed by code, or from
+  // our local `data.js` as an array of {name,symbol,...} objects.  Normalize
+  // both shapes into an array of {code?,name,symbol} objects.
+  let currencies = [];
+  if (country?.currencies) {
+    if (Array.isArray(country.currencies)) {
+      currencies = country.currencies.map((c) => ({
+        code: c?.code || '',
+        name: c?.name || '',
+        symbol: c?.symbol || '',
+      }));
+    } else {
+      currencies = Object.entries(country.currencies).map(([code, info]) => ({
         code,
         name: info?.name ?? '',
         symbol: info?.symbol ?? '',
-      }))
-    : [];
+      }));
+    }
+  }
 
-  // v3.1 languages is an object keyed by language code.
-  // Native language names (like in your data.js) generally aren't provided,
-  // so we mirror `name` into `nativeName`.
-  const languages = country?.languages
-    ? Object.values(country.languages).map((langName) => ({
+  // languages may come as an array of objects (local data) or as an object of
+  // simple strings (API).  Produce [{name,nativeName},...].
+  let languages = [];
+  if (country?.languages) {
+    if (Array.isArray(country.languages)) {
+      languages = country.languages.map((l) => ({
+        name: l?.name || String(l) || '',
+        nativeName: l?.nativeName || l?.name || '',
+      }));
+    } else {
+      languages = Object.values(country.languages).map((langName) => ({
         name: langName ?? '',
         nativeName: langName ?? '',
-      }))
-    : [];
+      }));
+    }
+  }
 
   return {
     name,
@@ -81,21 +137,11 @@ function mapCountry(country) {
 }
 
 async function fetchCountries() {
-  const res = await fetch(API_URL, {
-    headers: { Accept: 'application/json' },
-  });
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    throw new Error(
-      `REST Countries request failed: ${res.status} ${res.statusText} ${body}`
-    );
-  }
-
-  const raw = await res.json();
+  // local data loaded via data.js
+  const raw = Array.isArray(window.countryData) ? window.countryData : [];
   const mapped = Array.isArray(raw) ? raw.map(mapCountry) : [];
 
-  // Consistent ordering
+  // Consistent ordering (same as before)
   mapped.sort((a, b) => a.name.official.localeCompare(b.name.official));
 
   return mapped;
@@ -235,7 +281,29 @@ document.getElementById('load-more-btn').addEventListener('click', () => {
 });
 
 function getFormattedNames(names) {
-  return Object.values(names).map((name) => name.name).join(', ');
+  if (!names) return '';
+
+  // when data comes as an array of objects
+  if (Array.isArray(names)) {
+    return names
+      .map((item) => {
+        if (item && typeof item === 'object' && 'name' in item) {
+          return item.name;
+        }
+        return String(item);
+      })
+      .join(', ');
+  }
+
+  // when data comes as an object keyed by code or similar
+  return Object.values(names)
+    .map((item) => {
+      if (item && typeof item === 'object' && 'name' in item) {
+        return item.name;
+      }
+      return String(item);
+    })
+    .join(', ');
 }
 
 function countryCardHandler(country) {
@@ -253,9 +321,9 @@ function countryCardHandler(country) {
     '&capital=' +
     encodeURIComponent(country.capital) +
     '&currencies=' +
-    encodeURIComponent(getFormattedNames(country.currencies)) +
+    encodeURIComponent(getFormattedCurrencies(country.currencies)) +
     '&languages=' +
-    encodeURIComponent(getFormattedNames(country.languages));
+    encodeURIComponent(getFormattedLanguages(country.languages));
 
   window.location.href = './details.html' + queryString;
 }

@@ -1,24 +1,9 @@
-const axios = require("axios");
-const EventEmitter = require("events");
+const https = require('https');
+const EventEmitter = require('events');
 
 const countryAPI = new EventEmitter();
 
-// REST Countries /all expects fields= (max 10); keep only what you need
-const FIELDS = [
-  "name",
-  "capital",
-  "subregion",
-  "region",
-  "population",
-  "flags",
-  "currencies",
-  "languages",
-];
-
-const API_URL = `https://restcountries.com/v3.1/all?fields=${FIELDS.join(",")}`;
-
 let countriesData = null;
-let inFlightPromise = null;
 
 function mapCountry(country) {
   const name = {
@@ -46,7 +31,7 @@ function mapCountry(country) {
   const languages = country?.languages
     ? Object.values(country.languages).map((langName) => ({
         name: langName ?? "",
-        nativeName: langName ?? "", // REST Countries doesn't provide nativeName like your data.js
+        nativeName: langName ?? "",
       }))
     : [];
 
@@ -62,38 +47,41 @@ function mapCountry(country) {
   };
 }
 
-function fetchCountries({ refresh = false } = {}) {
-  // Keep your old caching behavior
-  if (countriesData && !refresh) return Promise.resolve(countriesData);
+function fetchCountries() {
+  return new Promise(function (resolve, reject) {
+    const API_URL =
+      'https://restcountries.com/v3.1/all?fields=name,capital,flags,currencies,languages,region,subregion,population&fullText=True';
 
-  // Prevent multiple simultaneous requests
-  if (inFlightPromise && !refresh) return inFlightPromise;
+    let req = https.get(API_URL, function (res) {
+      let data = '';
 
-  inFlightPromise = axios
-    .get(API_URL, {
-      headers: { Accept: "application/json" },
-      timeout: 15000,
-    })
-    .then((response) => {
-      const raw = response.data;
+      // A chunk of data has been received.
+      res.on('data', function (chunk) {
+        data += chunk;
+      });
 
-      const mapped = Array.isArray(raw) ? raw.map(mapCountry) : [];
-      countriesData = mapped;
-
-      // Emit the final mapped payload (most useful)
-      countryAPI.emit("data", mapped);
-
-      return mapped;
-    })
-    .catch((err) => {
-      countryAPI.emit("error", err);
-      throw err;
-    })
-    .finally(() => {
-      inFlightPromise = null;
+      // The whole response has been received.
+      res.on('end', function () {
+        try {
+          const parsed = JSON.parse(data);
+          const mapped = Array.isArray(parsed)
+            ? parsed.map(mapCountry)
+            : [];
+          countriesData = mapped;
+          resolve(mapped);
+        } catch (err) {
+          reject(err);
+        }
+      });
     });
 
-  return inFlightPromise;
+    // Handle errors in the request
+    req.on('error', function (error) {
+      reject(error);
+    });
+
+    req.end();
+  });
 }
 
 // If anywhere you were calling countryAPI.fetchCountries(), keep it working too:
