@@ -3,7 +3,7 @@ This is my version of the capstone project from IBM SkillsBuild for the certific
 
 # Extensions
 
-This project has been updated to call from the https://restcountries.com/ endpoint through my own backend demostrating the Model-View-Controller architecture of a full stack web application (my backend is hosted at https://capstone-country-explorer-backend.onrender.com/countries). The backend code is in this repository along with a repository strictly for the backend: https://github.com/JacksonSallee/Capstone-Country-Explorer-Backend
+This project has been updated to call from the https://restcountries.com/ endpoint and serve the page through the server. This no longer uses GitHub pages due to its complexity. This has more countries that were provided by the then data.js which has been deleted from this project since it's no longer needed.
 
 # Requirements
 
